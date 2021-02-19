@@ -147,16 +147,14 @@ class LeafNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
-
-        return null;
+        return this;
     }
 
     // See BPlusNode.getLeftmostLeaf.
     @Override
     public LeafNode getLeftmostLeaf() {
         // TODO(proj2): implement
-
-        return null;
+        return this;
     }
 
     // See BPlusNode.put.
@@ -164,7 +162,35 @@ class LeafNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         // TODO(proj2): implement
 
-        return Optional.empty();
+
+        if (keys.contains(key)) {
+            throw new BPlusTreeException("You insert the same Key in this table");
+        }
+        int d = this.metadata.getOrder();
+        // 找到新的 key 要插入的位置，key 已经可以定位 record 所在的叶子节点
+        // 所以只需要找到多少个节点的 key 比要插入的 key 小
+        int index = InnerNode.numLessThanEqual(key, keys);
+        keys.add(index, key);
+        rids.add(index, rid);
+        // 此时不发生 overflow，按照任务要求返回 Optional.empty()
+        // 要判断一个节点是否需要分裂，需要先将数值插入到节点中
+        // 然后再判断是否大于 2 倍的 order
+        if (keys.size() <= 2 * d) {
+            sync();
+            return Optional.empty();
+        }
+
+        List<DataBox> newKeys = new ArrayList<>();
+        List<RecordId> newRids = new ArrayList<>();
+        // 将下标大于 d 的都移动到新的叶子节点中
+        while (d < keys.size()) {
+            newKeys.add(keys.remove(d));
+            newRids.add(rids.remove(d));
+        }
+        LeafNode rightNode = new LeafNode(metadata, bufferManager, newKeys, newRids, this.rightSibling, treeContext);
+        this.rightSibling = Optional.of(rightNode.getPage().getPageNum());
+        sync();
+        return Optional.of(new Pair<>(newKeys.get(0), this.rightSibling.get()));
     }
 
     // See BPlusNode.bulkLoad.
@@ -180,7 +206,10 @@ class LeafNode extends BPlusNode {
     @Override
     public void remove(DataBox key) {
         // TODO(proj2): implement
-
+        int index = InnerNode.numLessThan(key, keys);
+        keys.remove(key);
+        rids.remove(index);
+        sync();
         return;
     }
 
