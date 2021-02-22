@@ -507,6 +507,8 @@ public class TestBPlusTree {
             assertEquals(Optional.of(rids.get(i)), tree.get(keys.get(i)));
         }
 
+        tree.toDotPDFFile("BPlustree.pdf");
+
         tree.remove(new IntDataBox(0));
         assertEquals(Optional.empty(), tree.get(new IntDataBox(0)));
     }

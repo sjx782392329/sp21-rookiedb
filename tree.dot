@@ -1,0 +1,28 @@
+digraph g {
+  node [shape=record, height=0.1];
+  node8[label = "<f0>|6|<f1>|12|<f2>"];
+  node2[label = "<f0>|2|<f1>|4|<f2>"];
+  node0[label = "{0: (0 0)|1: (1 1)}"];
+  "node2":f0 -> "node0";
+  node1[label = "{2: (2 2)|3: (3 3)}"];
+  "node2":f1 -> "node1";
+  node3[label = "{4: (4 4)|5: (5 5)}"];
+  "node2":f2 -> "node3";
+  "node8":f0 -> "node2";
+  node7[label = "<f0>|8|<f1>|10|<f2>"];
+  node4[label = "{6: (6 6)|7: (7 7)}"];
+  "node7":f0 -> "node4";
+  node5[label = "{8: (8 8)|9: (9 9)}"];
+  "node7":f1 -> "node5";
+  node6[label = "{10: (10 10)|11: (11 11)}"];
+  "node7":f2 -> "node6";
+  "node8":f1 -> "node7";
+  node12[label = "<f0>|14|<f1>|16|<f2>"];
+  node9[label = "{12: (12 12)|13: (13 13)}"];
+  "node12":f0 -> "node9";
+  node10[label = "{14: (14 14)|15: (15 15)}"];
+  "node12":f1 -> "node10";
+  node11[label = "{16: (16 16)|17: (17 17)|18: (18 18)|19: (19 19)}"];
+  "node12":f2 -> "node11";
+  "node8":f2 -> "node12";
+}
