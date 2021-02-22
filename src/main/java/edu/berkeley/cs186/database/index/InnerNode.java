@@ -117,7 +117,7 @@ class InnerNode extends BPlusNode {
         int newIndex = numLessThanEqual(splitKey, keys);
         int d = this.metadata.getOrder();
 
-        keys.add(newIndex, key);
+        keys.add(newIndex, splitKey);
         children.add(newIndex + 1, rightNodePageNum);
 
         if (keys.size() <= 2 * d) {

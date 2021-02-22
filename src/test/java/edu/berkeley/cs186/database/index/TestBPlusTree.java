@@ -485,4 +485,29 @@ public class TestBPlusTree {
         assertEquals(3, InnerNode.maxOrder(pageSizeInBytes, keySchema));
         assertEquals(3, BPlusTree.maxOrder(pageSizeInBytes, keySchema));
     }
+
+    @Test
+    @Category(SystemTests.class)
+    public void testPutAndGet() {
+        List<DataBox> keys = new ArrayList<>();
+        List<RecordId> rids = new ArrayList<>();
+
+
+        for (int i = 0; i < 20; i++) {
+            keys.add(new IntDataBox(i));
+            rids.add(new RecordId(i, (short) i));
+        }
+
+        BPlusTree tree = getBPlusTree(Type.intType(), 2);
+        for (int i = 0; i < 20; i++) {
+            tree.put(keys.get(i), rids.get(i));
+        }
+
+        for (int i = 0; i < 20; i++) {
+            assertEquals(Optional.of(rids.get(i)), tree.get(keys.get(i)));
+        }
+
+        tree.remove(new IntDataBox(0));
+        assertEquals(Optional.empty(), tree.get(new IntDataBox(0)));
+    }
 }
