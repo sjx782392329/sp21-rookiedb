@@ -196,10 +196,34 @@ class LeafNode extends BPlusNode {
     // See BPlusNode.bulkLoad.
     @Override
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
-            float fillFactor) {
+                                                  float fillFactor) {
         // TODO(proj2): implement
+        int maxSize = (int) (this.metadata.getOrder() * 2 * fillFactor);
+        while (data.hasNext() && keys.size() <= maxSize) {
+            Pair<DataBox, RecordId> next = data.next();
+            DataBox key = next.getFirst();
+            RecordId rid = next.getSecond();
+            if (keys.contains(key)) {
+                throw new BPlusTreeException("Exist the same key in this table");
+            }
+            int index = InnerNode.numLessThanEqual(key, keys);
+            keys.add(index, key);
+            rids.add(index, rid);
+        }
+        if (keys.size() <= maxSize) {
+            sync();
+            return Optional.empty();
+        }
 
-        return Optional.empty();
+        List<DataBox> newKeys = new ArrayList<>();
+        List<RecordId> newRids = new ArrayList<>();
+        newKeys.add(keys.remove(maxSize));
+        newRids.add(rids.remove(maxSize));
+
+        LeafNode newLeaf = new LeafNode(metadata, bufferManager, newKeys, newRids, this.rightSibling, treeContext);
+        this.rightSibling = Optional.of(newLeaf.getPage().getPageNum());
+        sync();
+        return Optional.of(new Pair<>(newKeys.get(0), this.rightSibling.get()));
     }
 
     // See BPlusNode.remove.

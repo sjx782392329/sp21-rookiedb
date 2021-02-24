@@ -12,6 +12,8 @@ import edu.berkeley.cs186.database.memory.BufferManager;
 import edu.berkeley.cs186.database.memory.Page;
 import edu.berkeley.cs186.database.table.RecordId;
 
+import javax.swing.tree.TreeNode;
+
 /**
  * A inner node of a B+ tree. Every inner node in a B+ tree of order d stores
  * between d and 2d keys. An inner node with n keys stores n + 1 "pointers" to
@@ -143,8 +145,35 @@ class InnerNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
             float fillFactor) {
         // TODO(proj2): implement
+        int d = this.metadata.getOrder();
+        Optional<Pair<DataBox, Long>> optionalPair;
+        while (data.hasNext() && keys.size() <= 2 * d) {
+            BPlusNode rightMostChild = getChild(children.size() - 1);
+            optionalPair = rightMostChild.bulkLoad(data, fillFactor);
+            if (optionalPair.isPresent()) {
+                keys.add(optionalPair.get().getFirst());
+                children.add(optionalPair.get().getSecond());
+            }
+        }
+        if (keys.size() <= 2 * d) {
+            sync();
+            return Optional.empty();
+        }
 
-        return Optional.empty();
+        List<DataBox> newKeys = new ArrayList<>();
+        List<Long> newChildren = new ArrayList<>();
+        newChildren.add(children.remove(d + 1));
+        while (d + 1 < keys.size()) {
+            newKeys.add(keys.remove(d + 1));
+            newChildren.add(children.remove(d + 1));
+        }
+
+        DataBox newSplitKey = keys.remove(d);
+        InnerNode rightInnerNode = new InnerNode(metadata, bufferManager, newKeys, newChildren, treeContext);
+        long rightInnerNodePageNum = rightInnerNode.getPage().getPageNum();
+        sync();
+        return Optional.of(new Pair<>(newSplitKey, rightInnerNodePageNum));
+
     }
 
     // See BPlusNode.remove.

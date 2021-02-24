@@ -158,9 +158,10 @@ abstract class BPlusNode {
      * You can assume that 0 < fillFactor <= 1 for testing purposes, and that
      * a fill factor outside of that range will result in undefined behavior
      * (you're free to handle those cases however you like).
+     * @return
      */
     public abstract Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
-            float fillFactor);
+                                                           float fillFactor);
 
     /**
      * n.remove(k) removes the key k and its corresponding record id from the
