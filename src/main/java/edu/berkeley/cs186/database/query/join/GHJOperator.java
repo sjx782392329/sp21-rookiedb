@@ -83,6 +83,17 @@ public class GHJOperator extends JoinOperator {
         // starting point. Make sure to use the hash function we provide to you
         // by calling hashFunc.apply(databox) to get an integer valued hash code
         // from a DataBox object.
+
+        for (Record record : records) {
+            DataBox recordValue = record.getValue(getLeftColumnIndex());
+            int hash = HashFunc.hashDataBox(recordValue, pass);
+            int partitionNum = hash % partitions.length;
+            while (partitionNum < 0) {
+                partitionNum += partitions.length;
+            }
+            partitions[partitionNum].add(record);
+        }
+
         return;
     }
 
@@ -124,6 +135,28 @@ public class GHJOperator extends JoinOperator {
         // You shouldn't refer to any variable starting with "left" or "right"
         // here, use the "build" and "probe" variables we set up for you.
         // Check out how SHJOperator implements this function if you feel stuck.
+        Map<DataBox, List<Record>> hashTable = new HashMap<>();
+
+        // build stage
+        for (Record buildRecord : buildRecords) {
+            DataBox buildJoinValue = buildRecord.getValue(buildColumnIndex);
+            if (!hashTable.containsKey(buildJoinValue)) {
+                hashTable.put(buildJoinValue, new ArrayList<>());
+            }
+            hashTable.get(buildJoinValue).add(buildRecord);
+        }
+
+        // probe stage
+        for (Record probeRecord : probeRecords) {
+            DataBox probeJoinValue = probeRecord.getValue(probeColumnIndex);
+            if (!hashTable.containsKey(probeJoinValue)) {
+                continue;
+            }
+            for (Record buildRecord : hashTable.get(probeJoinValue)) {
+                Record joinedRecord = buildRecord.concat(probeRecord);
+                this.joinedRecords.add(joinedRecord);
+            }
+        }
     }
 
     /**
@@ -150,6 +183,11 @@ public class GHJOperator extends JoinOperator {
             // do so immediately. If you don't meet the conditions and can't
             // further divide the partitions, find an alternative way to join
             // them together. Otherwise you should make a recursive call.
+            if (leftPartitions[i].getNumPages() <= numBuffers - 2 || rightPartitions[i].getNumPages() <= numBuffers - 2) {
+                buildAndProbe(leftPartitions[i], rightPartitions[i]);
+            } else {
+                run(leftRecords, rightRecords, pass + 1);
+            }
         }
     }
 
