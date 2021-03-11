@@ -85,7 +85,12 @@ public class GHJOperator extends JoinOperator {
         // from a DataBox object.
 
         for (Record record : records) {
-            DataBox recordValue = record.getValue(getLeftColumnIndex());
+            DataBox recordValue;
+            if (left) {
+                recordValue = record.getValue(getLeftColumnIndex());
+            } else {
+                recordValue = record.getValue(getRightColumnIndex());
+            }
             int hash = HashFunc.hashDataBox(recordValue, pass);
             int partitionNum = hash % partitions.length;
             while (partitionNum < 0) {
@@ -186,7 +191,7 @@ public class GHJOperator extends JoinOperator {
             if (leftPartitions[i].getNumPages() <= numBuffers - 2 || rightPartitions[i].getNumPages() <= numBuffers - 2) {
                 buildAndProbe(leftPartitions[i], rightPartitions[i]);
             } else {
-                run(leftRecords, rightRecords, pass + 1);
+                run(leftPartitions[i].getScanOperator(), rightPartitions[i].getScanOperator(), pass + 1);
             }
         }
     }
@@ -260,6 +265,13 @@ public class GHJOperator extends JoinOperator {
 
         // TODO(proj3_part1): populate leftRecords and rightRecords such that
         // SHJ breaks when trying to join them but not GHJ
+        for (int i = 0; i < 1860; i++) {
+            leftRecords.add(createRecord(i));
+        }
+
+        for (int i = 186; i < 9300; i++) {
+            rightRecords.add(createRecord(i));
+        }
         return new Pair<>(leftRecords, rightRecords);
     }
 
@@ -280,7 +292,10 @@ public class GHJOperator extends JoinOperator {
         ArrayList<Record> leftRecords = new ArrayList<>();
         ArrayList<Record> rightRecords = new ArrayList<>();
         // TODO(proj3_part1): populate leftRecords and rightRecords such that GHJ breaks
-
+        for (int i = 0; i < 10000; i++) {
+            leftRecords.add(createRecord(1));
+            rightRecords.add(createRecord(1));
+        }
         return new Pair<>(leftRecords, rightRecords);
     }
 }
