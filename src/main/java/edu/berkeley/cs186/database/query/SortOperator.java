@@ -94,8 +94,7 @@ public class SortOperator extends QueryOperator {
             recordList.add(record);
         }
         recordList.sort(this.comparator);
-        Run res = makeRun();
-        res.addAll(recordList);
+        Run res = makeRun(recordList);
         return res;
     }
 
