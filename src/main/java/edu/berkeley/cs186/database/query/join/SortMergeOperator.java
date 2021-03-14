@@ -152,6 +152,63 @@ public class SortMergeOperator extends JoinOperator {
          */
         private void fetchNextRecord() {
             // TODO(proj3_part1): implement
+            if (leftRecord == null) {
+                throw new NoSuchElementException();
+            }
+            if (rightRecord == null && !marked) {
+                throw new NoSuchElementException();
+            }
+
+            if (rightRecord == null) {
+                rightIterator.reset();
+                advanceRightIterator();
+                advanceLeftIterator();
+            }
+            nextRecord = null;
+            do {
+                if (!marked) {
+                    while (compare(leftRecord, rightRecord) == -1) {
+                        advanceLeftIterator();
+                    }
+                    while (compare(leftRecord, rightRecord) == 1) {
+                        advanceRightIterator();
+                    }
+                    rightIterator.markPrev();
+                    marked = true;
+                }
+
+                if (compare(leftRecord, rightRecord) == 0) {
+                    nextRecord = leftRecord.concat(rightRecord);
+                    if (rightIterator.hasNext()) {
+                        rightRecord = rightIterator.next();
+                    } else {
+                        rightRecord = null;
+                    }
+                } else {
+                    rightIterator.reset();
+                    rightRecord = rightIterator.next();
+                    advanceLeftIterator();
+                    marked = false;
+                }
+            } while (nextRecord == null);
+        }
+
+        private void advanceRightIterator() {
+            if (rightIterator.hasNext()) {
+                rightRecord = rightIterator.next();
+            } else {
+                rightRecord = null;
+                throw new NoSuchElementException();
+            }
+        }
+
+        private void advanceLeftIterator() {
+            if (leftIterator.hasNext()) {
+                leftRecord = leftIterator.next();
+            } else {
+                leftRecord = null;
+                throw new NoSuchElementException();
+            }
         }
 
         @Override
