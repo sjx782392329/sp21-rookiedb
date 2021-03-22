@@ -503,10 +503,38 @@ public class QueryPlan {
      * nested within any possible pushed down select operators
      */
     public QueryOperator minCostSingleAccess(String table) {
-        QueryOperator minOp = new SequentialScanOperator(this.transaction, table);
-
         // TODO(proj3_part2): implement
-        return minOp;
+        QueryOperator bestOp = new SequentialScanOperator(this.transaction, table);
+        int scanCost = bestOp.estimateIOCost();
+        int minCost = scanCost;
+
+        List<Integer> indexColumns = getEligibleIndexColumns(table);
+        int indexCol = -1;
+
+        for (Integer indexColumn : indexColumns) {
+            SelectPredicate selectPredicate = this.selectPredicates.get(indexColumn);
+            IndexScanOperator indexScan = new IndexScanOperator(this.transaction, table, selectPredicate.column, selectPredicate.operator, selectPredicate.value);
+            int indexCost = indexScan.estimateIOCost();
+            if (indexCol <= minCost) {
+                minCost = indexCost;
+                indexCol = indexColumn;
+                bestOp = indexScan;
+            }
+        }
+
+        QueryOperator selOp;
+        if (bestOp.isSequentialScan()) {
+            selOp = addEligibleSelections(bestOp, -1);
+        } else {
+            selOp = addEligibleSelections(bestOp, indexCol);
+        }
+
+        int finalCost = selOp.estimateIOCost();
+        if (finalCost <= minCost) {
+            return selOp;
+        }
+
+        return bestOp;
     }
 
     // Task 6: Join Selection //////////////////////////////////////////////////
