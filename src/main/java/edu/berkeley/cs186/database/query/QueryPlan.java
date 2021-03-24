@@ -10,6 +10,8 @@ import edu.berkeley.cs186.database.query.join.SNLJOperator;
 import edu.berkeley.cs186.database.table.Record;
 import edu.berkeley.cs186.database.table.Schema;
 
+import javax.management.Query;
+
 /**
  * QueryPlan provides a set of functions to generate simple queries. Calling the
  * methods corresponding to SQL syntax stores the information in the QueryPlan,
@@ -515,7 +517,7 @@ public class QueryPlan {
             SelectPredicate selectPredicate = this.selectPredicates.get(indexColumn);
             IndexScanOperator indexScan = new IndexScanOperator(this.transaction, table, selectPredicate.column, selectPredicate.operator, selectPredicate.value);
             int indexCost = indexScan.estimateIOCost();
-            if (indexCol <= minCost) {
+            if (indexCost <= minCost) {
                 minCost = indexCost;
                 indexCol = indexColumn;
                 bestOp = indexScan;
@@ -599,6 +601,36 @@ public class QueryPlan {
         //      Using the operator from Case 1 or 2, use minCostJoinType to
         //      calculate the cheapest join with the new table and the
         //      previously joined tables. Then, update the result map if needed.
+        for (Set<String> prevSet : prevMap.keySet()) {
+            QueryOperator left0 = prevMap.get(prevSet);
+            for (int i = 0; i < joinPredicates.size(); i++) {
+                String leftSlide = joinPredicates.get(i).leftTable;
+                String rightSlide = joinPredicates.get(i).rightTable;
+                String tar, leftCol, rightCol;
+                if (prevSet.contains(leftSlide) && !prevSet.contains(rightSlide)) {
+                    tar = rightSlide;
+                    leftCol = joinPredicates.get(i).leftColumn;
+                    rightCol = joinPredicates.get(i).rightColumn;
+                } else if (prevSet.contains(rightSlide) && !prevSet.contains(leftSlide)) {
+                    tar = leftSlide;
+                    leftCol = joinPredicates.get(i).rightColumn;
+                    rightCol = joinPredicates.get(i).leftColumn;
+                } else {
+                    continue;
+                }
+
+                Set<String> tep = new HashSet<>();
+                tep.add(tar);
+                QueryOperator right0 = pass1Map.get(tep);
+                QueryOperator op = minCostJoinType(left0, right0, leftCol, rightCol);
+                Set<String> res = new HashSet<>(prevSet);
+                res.add(tar);
+                QueryOperator res0 = result.get(res);
+                if (res0 == null || op.estimateIOCost() < res0.estimateIOCost()) {
+                    result.put(res,op);
+                }
+            }
+        }
         return result;
     }
 
@@ -645,9 +677,34 @@ public class QueryPlan {
         // tables have been joined.
         //
         // Set the final operator to the lowest cost operator from the last
-        // pass, add group by and select operators, and return an iterator over
+        // pass, add group by and project operators, and return an iterator over
         // the final operator
-        return this.executeNaive(); // TODO(proj3_part2): Replace this!
+        Set<String> names = new HashSet<>();
+        Map<Set<String>, QueryOperator> pass0 = new HashMap<>();
+
+        names.add(tableNames.get(0));
+        pass0.put(names, minCostSingleAccess(tableNames.get(0)));
+
+        if (tableNames.size() == 0) {
+            finalOperator = minCostOperator(pass0);
+            addGroupBy();
+            addProjects();
+            return finalOperator.iterator();
+        }
+
+        for (int i = 0; i < tableNames.size(); i++) {
+            Set<String> table = new HashSet<>();
+            table.add(tableNames.get(i));
+            pass0.put(table, minCostSingleAccess(tableNames.get(i)));
+        }
+
+        Map<Set<String>, QueryOperator> passi = minCostJoins(pass0, pass0);
+        while (passi.size() > 1) {
+            passi = minCostJoins(passi, pass0);
+        }
+        finalOperator = minCostOperator(passi);
+
+        return finalOperator.iterator(); // TODO(proj3_part2): Replace this!
     }
 
     // EXECUTE NAIVE ///////////////////////////////////////////////////////////
