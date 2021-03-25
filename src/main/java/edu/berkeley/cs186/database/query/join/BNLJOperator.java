@@ -39,7 +39,7 @@ public class BNLJOperator extends JoinOperator {
         int numLeftPages = getLeftSource().estimateStats().getNumPages();
         int numRightPages = getRightSource().estimateStats().getNumPages();
         return ((int) Math.ceil((double) numLeftPages / (double) usableBuffers)) * numRightPages +
-               numLeftPages;
+               getLeftSource().estimateIOCost();
     }
 
     /**
